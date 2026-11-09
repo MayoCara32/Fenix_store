@@ -1,12 +1,12 @@
 # Tiendita Fénix
 
-WebApp móvil de autoservicio construida con Next.js, TypeScript y Tailwind CSS. Las compras se registran como saldo pendiente en Google Sheets; no procesa pagos.
+WebApp móvil de autoservicio construida con Next.js, TypeScript y Tailwind CSS. Las compras pueden registrarse como pagadas en efectivo o como saldo pendiente en Google Sheets; la aplicación no procesa ni verifica pagos.
 
 ## Configuración
 
 1. Instala Node.js 20 o superior y ejecuta `npm install`.
 2. Crea una hoja de cálculo con estas pestañas y encabezados exactos en la primera fila:
-   - `Inventario`: `id_producto`, `nombre`, `precio`, `stock_actual`, `stock_minimo`, `alerta_enviada`.
+   - `Inventario`: `id_producto`, `categoria`, `nombre`, `precio`, `cantidad_promo`, `precio_promo`, `stock_actual`, `stock_minimo`, `alerta_enviada` (el orden puede variar).
    - `Usuarios`: `nombre_completo`, `saldo_pendiente`, `fecha_registro`.
    - `Ventas`: `id_venta`, `fecha_hora`, `nombre_usuario`, `producto`, `cantidad`, `total`, `estado_pago`.
 3. Habilita Google Sheets API en Google Cloud, crea una cuenta de servicio y comparte la hoja con su correo con permisos de editor. Cada producto debe tener un ID único; precios y existencias deben ser numéricos. Usa `FALSE` en `alerta_enviada`.
@@ -14,7 +14,9 @@ WebApp móvil de autoservicio construida con Next.js, TypeScript y Tailwind CSS.
 5. Ejecuta `npm run dev` y abre `http://localhost:3000`. Para producción ejecuta `npm run build`.
 6. Importa el repositorio en Vercel, configura las mismas variables de entorno en el proyecto y despliega. Genera un código QR con la URL HTTPS del despliegue para colocarlo en el taller.
 
-Cada compra crea una fila en `Ventas` por producto, con el mismo ID de venta. El nombre identifica al usuario sin distinguir mayúsculas y minúsculas; se crea automáticamente si no existe. Cuando las existencias llegan al mínimo, se intenta enviar un WhatsApp y se marca `alerta_enviada` solo después de enviarlo. Al reabastecer, restablece esa celda a `FALSE` para permitir una nueva alerta.
+Cada compra crea una fila en `Ventas` por producto, con el mismo ID de venta. Si el usuario declara que dejó el efectivo en la caja fuerte, el estado es `Pagado en efectivo` y no se modifica su saldo anterior; si elige pagar después, el estado es `Pendiente` y el total se suma al saldo. El pago en efectivo depende de la declaración del usuario y requiere conciliación física. El nombre identifica al usuario sin distinguir mayúsculas y minúsculas; se crea automáticamente si no existe. Cuando las existencias llegan al mínimo, se intenta enviar un WhatsApp y se marca `alerta_enviada` solo después de enviarlo. Al reabastecer, restablece esa celda a `FALSE` para permitir una nueva alerta.
+
+Para agregar una promoción, escribe la cantidad del paquete (entero de 2 o más) en `cantidad_promo` y el precio total del paquete en `precio_promo`. Por ejemplo, precio unitario 3, cantidad 2 y precio promocional 5 calcula 3 unidades por 8 y 4 por 10. Deja ambas celdas vacías para productos sin promoción. Solo se admite una promoción por producto. El servidor recalcula los importes y solicita actualizar el catálogo si el total cambió antes de confirmar.
 
 ## Limitaciones operativas
 
