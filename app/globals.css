@@ -72,6 +72,9 @@ h1 span { color: var(--orange-light); }
 .product-card:hover { transform: translateY(-3px); border-color: #c9c1b8; box-shadow: 0 10px 24px #231f200c; }
 .product-art { position: relative; height: 160px; display: flex; align-items: center; justify-content: center; overflow: hidden; background: #ebe8e2; color: #7a746e; }
 .product-art:after { content: ''; position: absolute; width: 180px; height: 180px; border: 1px solid #d8d2ca; transform: rotate(45deg); }
+.product-art.has-image:after { display: none; }
+.product-image { object-fit: contain; }
+.product-art.has-image .product-number { background: #fff; padding: 6px 8px; }
 .product-art-top { position: absolute; z-index: 1; top: 13px; left: 13px; right: 13px; display: flex; justify-content: space-between; align-items: center; }
 .stock-label { display: inline-flex; align-items: center; gap: 6px; padding: 6px 8px; background: #fff; font-size: 9px; font-weight: 900; letter-spacing: .06em; }
 .stock-label span { width: 6px; height: 6px; background: var(--orange-red); border-radius: 50%; }

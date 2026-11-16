@@ -21,3 +21,7 @@ Para agregar una promoción, escribe la cantidad del paquete (entero de 2 o más
 ## Limitaciones operativas
 
 Google Sheets no ofrece transacciones ni bloqueo entre solicitudes. Dos compras simultáneas pueden sobrescribir existencias o saldos; para producción con concurrencia se necesita una base de datos transaccional o un servicio de serialización externo. Una falla entre el registro de ventas y la actualización de inventario/saldo requiere conciliación manual; el mensaje incluye el ID de venta. El nombre no verifica identidad: cualquier persona con la URL puede registrar una compra a nombre de otra. Restringe el acceso o agrega autenticación antes de depender de los saldos. Las alertas son de mejor esfuerzo y pueden requerir configuración y aprobación de plantillas en WhatsApp/Twilio.
+
+## Im?genes de productos
+
+Guarda las im?genes en `public/productos` con el ID del producto como nombre de archivo; por ejemplo, `123.jpg` para el `id_producto` `123`. Se admiten JPG, JPEG, PNG, WebP y AVIF. Consulta las instrucciones de esa carpeta. Los productos sin imagen conservan el icono predeterminado. Para publicar im?genes nuevas, vuelve a desplegar el proyecto.

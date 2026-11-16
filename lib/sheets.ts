@@ -1,4 +1,6 @@
 import 'server-only';
+import { readdir } from 'node:fs/promises';
+import path from 'node:path';
 import { google } from 'googleapis';
 import twilio from 'twilio';
 import type { CartItem, PaymentMethod, Product } from './types';
@@ -40,7 +42,16 @@ async function inventory(): Promise<InventoryRow[]> {
     return [{ product: { id: String(r[col.id_producto]), name: String(r[col.nombre]), price, stock, category: String(r[col.categoria] ?? '').trim(), promotion }, minimum, alerted: ['true', 'si', 'sí', '1'].includes(String(r[col.alerta_enviada] ?? '').trim().toLowerCase()), row: index + 2, stockColumn: columnName(col.stock_actual), alertColumn: columnName(col.alerta_enviada) }];
   });
 }
-export async function getProducts() { return (await inventory()).map(x => x.product); }
+export async function getProducts() {
+  const products = (await inventory()).map(x => x.product);
+  const files = await readdir(path.join(process.cwd(), 'public', 'productos')).catch(() => [] as string[]);
+  const images = new Map<string, string>();
+  for (const file of files.sort()) {
+    const match = /^(.*)\.(jpg|jpeg|png|webp|avif)$/i.exec(file);
+    if (match && !images.has(match[1])) images.set(match[1], `/productos/${encodeURIComponent(file)}`);
+  }
+  return products.map(product => ({ ...product, image: images.get(product.id) ?? null }));
+}
 
 export async function purchase(name: string, items: CartItem[], paymentMethod: PaymentMethod, expectedTotal: number) {
   const sheets = client(); const id = spreadsheetId();

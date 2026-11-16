@@ -8,6 +8,16 @@ import { lineTotal } from '@/lib/pricing';
 
 const money = (value: number) => new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN', minimumFractionDigits: 2 }).format(value);
 
+function ProductArt({ product, index }: { product: Product; index: number }) {
+  const [failedImage, setFailedImage] = useState<string | null>(null);
+  const showImage = product.image && failedImage !== product.image;
+  return <div className={`product-art ${showImage ? 'has-image' : ''}`}>
+    {showImage ? <Image src={product.image!} alt={product.name} fill sizes="(max-width: 640px) 50vw, (max-width: 900px) 33vw, 25vw" className="product-image" onError={() => setFailedImage(product.image ?? null)}/> : <Coffee className="product-icon" size={58} strokeWidth={1.2}/>}
+    <div className="product-art-top"><span className={`stock-label ${!product.stock ? 'stock-empty' : ''}`}><span/> {product.stock > 0 ? 'DISPONIBLE' : 'AGOTADO'}</span><span className="product-number">{String(index + 1).padStart(2, '0')}</span></div>
+    {!showImage && <span className="product-art-caption">TIENDA / F?NIX</span>}
+  </div>;
+}
+
 export default function Home() {
   const [products, setProducts] = useState<Product[]>([]);
   const [cart, setCart] = useState<Record<string, number>>({});
@@ -76,8 +86,7 @@ export default function Home() {
       <div className="catalog-bar"><span><span className="bar-accent"/> TODOS LOS PRODUCTOS</span><span aria-live="polite">{loading ? 'CARGANDO...' : `${products.length} PRODUCTOS`}</span></div>
       {error && !open && <div role="alert" className="notice notice-error"><div><strong>NO PUDIMOS CARGAR EL CATÁLOGO</strong><p>{error}</p></div><button className="text-button" onClick={load}><RefreshCw size={15}/> REINTENTAR</button></div>}
       {loading ? <div className="empty-state" role="status"><LoaderCircle className="spin" size={28}/><strong>PREPARANDO EL CATÁLOGO</strong><span>Un momento, por favor.</span></div> : products.length === 0 && !error ? <div className="empty-state"><ShoppingBag size={28}/><strong>AÚN NO HAY PRODUCTOS</strong><span>El catálogo está vacío por ahora.</span></div> : !error && categories.map((category, groupIndex) => <section className="category-section" key={category.title} aria-labelledby={`category-${groupIndex}`}><div className="category-heading"><div><span className="category-index">{String(groupIndex + 1).padStart(2, '0')} / CATEGORÍA</span><h3 id={`category-${groupIndex}`}>{category.title}</h3></div><span className="category-count">{category.products.length} PRODUCTOS</span></div>{category.products.length === 0 ? <p className="category-empty">No hay productos en esta categoría por ahora.</p> : <div className="product-grid">{category.products.map((p, index) => <article key={p.id} className={`product-card ${!p.stock ? 'sold-out' : ''}`}>
-        {/* El icono es un recurso provisional: la hoja no proporciona imágenes de producto. */}
-        <div className="product-art"><div className="product-art-top"><span className={`stock-label ${!p.stock ? 'stock-empty' : ''}`}><span/> {p.stock > 0 ? 'DISPONIBLE' : 'AGOTADO'}</span><span className="product-number">{String(index + 1).padStart(2, '0')}</span></div><Coffee className="product-icon" size={58} strokeWidth={1.2}/><span className="product-art-caption">TIENDA / FÉNIX</span></div>
+        <ProductArt product={p} index={index}/>
         <div className="product-info"><h3>{p.name}</h3>{p.promotion && <p className="promo-label">PROMO: {p.promotion.quantity} POR {money(p.promotion.price)}</p>}<div className="product-bottom"><div><span className="price-label">PRECIO UNITARIO</span><p className="price">{money(p.price)}</p></div>{cart[p.id] ? <div className="quantity-control"><button className="quantity-button" aria-label={`Quitar una unidad de ${p.name}`} onClick={() => change(p, -1)}><Minus size={16}/></button><span aria-label={`Cantidad: ${cart[p.id]}`}>{cart[p.id]}</span><button className="quantity-button" aria-label={`Agregar una unidad de ${p.name}`} disabled={cart[p.id] >= p.stock} onClick={() => change(p, 1)}><Plus size={16}/></button></div> : <button className="add-button" disabled={!p.stock} aria-label={`Agregar ${p.name}`} onClick={() => change(p, 1)}><Plus size={20}/></button>}</div></div>
       </article>)}</div>}</section>)}
     </section>
