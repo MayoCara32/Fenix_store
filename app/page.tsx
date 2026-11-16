@@ -12,7 +12,7 @@ function ProductArt({ product, index }: { product: Product; index: number }) {
   const [failedImage, setFailedImage] = useState<string | null>(null);
   const showImage = product.image && failedImage !== product.image;
   return <div className={`product-art ${showImage ? 'has-image' : ''}`}>
-    {showImage ? <Image src={product.image!} alt={product.name} fill sizes="(max-width: 640px) 50vw, (max-width: 900px) 33vw, 25vw" className="product-image" onError={() => setFailedImage(product.image ?? null)}/> : <Coffee className="product-icon" size={58} strokeWidth={1.2}/>}
+    {showImage ? <Image src={product.image!} alt={product.name} fill sizes="(max-width: 640px) 50vw, (max-width: 900px) 33vw, 25vw" className={`product-image ${product.id === 'F_03' ? 'product-image-rotated' : ''}`} onError={() => setFailedImage(product.image ?? null)}/> : <Coffee className="product-icon" size={58} strokeWidth={1.2}/>}
     <div className="product-art-top"><span className={`stock-label ${!product.stock ? 'stock-empty' : ''}`}><span/> {product.stock > 0 ? 'DISPONIBLE' : 'AGOTADO'}</span><span className="product-number">{String(index + 1).padStart(2, '0')}</span></div>
     {!showImage && <span className="product-art-caption">TIENDA / F?NIX</span>}
   </div>;
