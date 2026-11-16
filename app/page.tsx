@@ -1,8 +1,8 @@
 'use client';
 
 import Image from 'next/image';
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import { ArrowDown, ArrowRight, Check, Coffee, Flag, LoaderCircle, Minus, Plus, RefreshCw, ShoppingBag, X } from 'lucide-react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { ArrowDown, ArrowLeft, ArrowRight, Check, Coffee, Flag, LoaderCircle, Minus, Plus, RefreshCw, ShoppingBag, X } from 'lucide-react';
 import type { PaymentMethod, Product } from '@/lib/types';
 import { lineTotal } from '@/lib/pricing';
 
@@ -21,6 +21,8 @@ function ProductArt({ product, index }: { product: Product; index: number }) {
 
 export default function Home() {
   const [products, setProducts] = useState<Product[]>([]);
+  const [recommendations, setRecommendations] = useState<string[]>([]);
+  const recommendationsRef = useRef<HTMLDivElement>(null);
   const [cart, setCart] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -31,7 +33,7 @@ export default function Home() {
   const [success, setSuccess] = useState<{ total: number; saleId: string; paymentMethod: PaymentMethod } | null>(null);
   const load = useCallback(async () => {
     setLoading(true); setError('');
-    try { const res = await fetch('/api/products', { cache: 'no-store' }); const data = await res.json(); if (!res.ok) throw new Error(data.error); setProducts(data.products); }
+    try { const res = await fetch('/api/products', { cache: 'no-store' }); const data = await res.json(); if (!res.ok) throw new Error(data.error); setProducts(data.products); setRecommendations(data.recommendations ?? []); }
     catch (e) { setError(e instanceof Error ? e.message : 'No pudimos cargar el catálogo.'); }
     finally { setLoading(false); }
   }, []);
@@ -46,6 +48,7 @@ export default function Home() {
     return () => window.removeEventListener('keydown', onKey);
   }, [open, sending]);
   const selected = useMemo(() => products.filter(p => cart[p.id] > 0), [products, cart]);
+  const recommendedProducts = recommendations.flatMap(id => { const product = products.find(p => p.id === id); return product ? [product] : []; });
   const categories = useMemo(() => {
     const normalize = (category: string) => category.trim().toLocaleLowerCase('es');
     return [
@@ -90,6 +93,7 @@ export default function Home() {
 
     <section id="catalogo" className="catalog container">
       <div className="section-heading"><div><p className="kicker section-kicker"><span className="slash"/> LA TIENDITA DEL TALLER</p><h2>ELIGE TU <span>ANTOJO.</span></h2><p className="section-description">Pequeños gustos para acompañar tu día.</p></div><div className="section-number" aria-hidden="true">01 <span>/</span> CATÁLOGO</div></div>
+      {!loading && !error && recommendedProducts.length > 0 && <section className="recommendations" aria-labelledby="recommendations-title"><div className="recommendations-heading"><div><p className="kicker section-kicker"><span className="slash"/> SELECCIÓN DEL DÍA</p><h3 id="recommendations-title">DESTACADOS PARA TI</h3><p>Una selección diaria de los favoritos más vendidos.</p></div><div className="recommendation-controls"><button type="button" aria-label="Desplazar recomendaciones a la izquierda" aria-controls="recommendations-list" onClick={() => recommendationsRef.current?.scrollBy({ left: -250, behavior: 'smooth' })}><ArrowLeft size={18}/></button><button type="button" aria-label="Desplazar recomendaciones a la derecha" aria-controls="recommendations-list" onClick={() => recommendationsRef.current?.scrollBy({ left: 250, behavior: 'smooth' })}><ArrowRight size={18}/></button></div></div><div className="recommendations-list" id="recommendations-list" ref={recommendationsRef} tabIndex={0} aria-label="Productos recomendados">{recommendedProducts.map((p, index) => <article className="product-card recommendation-card" key={p.id}><ProductArt product={p} index={index}/><div className="product-info"><h3>{p.name}</h3>{p.promotion && <p className="promo-label">PROMO: {p.promotion.quantity} POR {money(p.promotion.price)}</p>}<div className="product-bottom"><div><span className="price-label">PRECIO UNITARIO</span><p className="price">{money(p.price)}</p></div>{cart[p.id] ? <div className="quantity-control"><button className="quantity-button" aria-label={`Quitar una unidad de ${p.name}`} onClick={() => change(p, -1)}><Minus size={16}/></button><span aria-label={`Cantidad: ${cart[p.id]}`}>{cart[p.id]}</span><button className="quantity-button" aria-label={`Agregar una unidad de ${p.name}`} disabled={cart[p.id] >= p.stock} onClick={() => change(p, 1)}><Plus size={16}/></button></div> : <button className="add-button" aria-label={`Agregar ${p.name}`} onClick={() => change(p, 1)}><Plus size={20}/></button>}</div></div></article>)}</div></section>}
       <div className="catalog-bar"><span><span className="bar-accent"/> TODOS LOS PRODUCTOS</span><span aria-live="polite">{loading ? 'CARGANDO...' : `${products.length} PRODUCTOS`}</span></div>
       {error && !open && <div role="alert" className="notice notice-error"><div><strong>NO PUDIMOS CARGAR EL CATÁLOGO</strong><p>{error}</p></div><button className="text-button" onClick={load}><RefreshCw size={15}/> REINTENTAR</button></div>}
       {loading ? <div className="empty-state" role="status"><LoaderCircle className="spin" size={28}/><strong>PREPARANDO EL CATÁLOGO</strong><span>Un momento, por favor.</span></div> : products.length === 0 && !error ? <div className="empty-state"><ShoppingBag size={28}/><strong>AÚN NO HAY PRODUCTOS</strong><span>El catálogo está vacío por ahora.</span></div> : !error && categories.map((category, groupIndex) => <section className="category-section" key={category.title} aria-labelledby={`category-${groupIndex}`}><div className="category-heading"><div><span className="category-index">{String(groupIndex + 1).padStart(2, '0')} / CATEGORÍA</span><h3 id={`category-${groupIndex}`}>{category.title}</h3></div><span className="category-count">{category.products.length} PRODUCTOS</span></div>{category.products.length === 0 ? <p className="category-empty">No hay productos en esta categoría por ahora.</p> : <div className="product-grid">{category.products.map((p, index) => <article key={p.id} className={`product-card ${!p.stock ? 'sold-out' : ''}`}>

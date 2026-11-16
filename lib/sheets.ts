@@ -6,6 +6,7 @@ import twilio from 'twilio';
 import type { CartItem, PaymentMethod, Product } from './types';
 import { paymentDetails } from './payment';
 import { lineTotal } from './pricing';
+import { dailyRecommendations } from './recommendations';
 
 const spreadsheetId = () => {
   const id = process.env.GOOGLE_SHEET_ID;
@@ -51,6 +52,11 @@ export async function getProducts() {
     if (match && !images.has(match[1])) images.set(match[1], `/productos/${encodeURIComponent(file)}`);
   }
   return products.map(product => ({ ...product, image: images.get(product.id) ?? null }));
+}
+
+export async function getRecommendations(products: Product[]) {
+  const response = await client().spreadsheets.values.get({ spreadsheetId: spreadsheetId(), range: 'Ventas!A2:G' });
+  return dailyRecommendations(products, response.data.values ?? [], new Date()).map(product => product.id);
 }
 
 export async function purchase(name: string, items: CartItem[], paymentMethod: PaymentMethod, expectedTotal: number) {
