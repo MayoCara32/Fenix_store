@@ -105,9 +105,19 @@ h1 span { color: var(--orange-light); }
 .recommendation-controls { display: flex; gap: 6px; flex: none; }
 .recommendation-controls button { display: grid; place-items: center; width: 40px; height: 40px; border: 0; background: var(--charcoal); color: white; }
 .recommendation-controls button:hover { background: var(--brand-red); }
-.recommendations-list { display: flex; gap: 14px; overflow-x: auto; scroll-snap-type: x mandatory; padding: 18px 0 10px; scrollbar-width: thin; }
-.recommendation-card { flex: 0 0 max(220px, 28%); scroll-snap-align: start; }
-@media (max-width: 640px) { .recommendations { padding: 18px 14px; }.recommendations-heading h3 { font-size: 20px; }.recommendation-card { flex-basis: 175px; } }
+.coverflow { position: relative; height: clamp(190px, 28vw, 290px); margin-top: 20px; overflow: hidden; perspective: 900px; touch-action: pan-y; }
+.coverflow-card { position: absolute; top: 50%; left: 50%; width: min(27%, 300px); padding: 0; border: 3px solid white; background: white; box-shadow: 0 10px 24px #231f2033; cursor: pointer; transition: transform .6s ease, opacity .6s ease, filter .6s ease; }
+.coverflow-card .product-art { aspect-ratio: 4 / 3; }
+.coverflow-position-0 { z-index: 1; opacity: .55; filter: brightness(.8); transform: translate(-185%, -50%) scale(.7) rotateY(32deg); }
+.coverflow-position-1 { z-index: 2; opacity: .8; filter: brightness(.9); transform: translate(-125%, -50%) scale(.84) rotateY(25deg); }
+.coverflow-position-2 { z-index: 3; transform: translate(-50%, -50%); }
+.coverflow-position-3 { z-index: 2; opacity: .8; filter: brightness(.9); transform: translate(25%, -50%) scale(.84) rotateY(-25deg); }
+.coverflow-position-4 { z-index: 1; opacity: .55; filter: brightness(.8); transform: translate(85%, -50%) scale(.7) rotateY(-32deg); }
+.featured-details { display: flex; align-items: end; justify-content: space-between; gap: 20px; width: min(100%, 360px); margin: 0 auto 8px; padding: 16px 18px; background: white; border-bottom: 3px solid var(--brand-red); }
+.featured-counter { color: #8a4330; font-size: 10px; font-weight: 900; letter-spacing: .12em; }
+.featured-details h4 { margin: 6px 0 0; font-size: 17px; font-weight: 900; }
+.featured-price { margin-top: 7px; font-size: 20px; font-weight: 900; }
+@media (max-width: 640px) { .recommendations { padding: 18px 14px; }.recommendations-heading h3 { font-size: 20px; }.coverflow { height: 200px; }.coverflow-card { width: 48%; }.coverflow .stock-label, .coverflow .product-number, .coverflow .product-art-caption { display: none; } }
 .category-heading { display: flex; align-items: end; justify-content: space-between; gap: 16px; border-bottom: 1px solid var(--line); padding-bottom: 12px; }
 .category-index { color: #8a4330; font-size: 9px; font-weight: 900; letter-spacing: .14em; }
 .category-heading h3 { margin-top: 5px; color: var(--charcoal); font-size: 25px; font-weight: 900; font-style: italic; text-transform: uppercase; letter-spacing: -.04em; }

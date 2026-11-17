@@ -22,7 +22,8 @@ function ProductArt({ product, index }: { product: Product; index: number }) {
 export default function Home() {
   const [products, setProducts] = useState<Product[]>([]);
   const [recommendations, setRecommendations] = useState<string[]>([]);
-  const recommendationsRef = useRef<HTMLDivElement>(null);
+  const touchStartX = useRef<number | null>(null);
+  const [carouselIndex, setCarouselIndex] = useState(0);
   const [carouselPaused, setCarouselPaused] = useState(false);
   const [carouselInteracting, setCarouselInteracting] = useState(false);
   const [carouselFocused, setCarouselFocused] = useState(false);
@@ -44,13 +45,8 @@ export default function Home() {
   useEffect(() => {
     if (carouselPaused || carouselInteracting || carouselFocused || open || success || recommendations.length < 2) return;
     const timer = window.setInterval(() => {
-      const list = recommendationsRef.current;
-      if (!list || document.hidden || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-      const max = list.scrollWidth - list.clientWidth;
-      if (max <= 1) return;
-      const card = list.querySelector<HTMLElement>('.recommendation-card');
-      const step = card ? card.offsetWidth + 14 : list.clientWidth;
-      list.scrollTo({ left: list.scrollLeft >= max - 2 ? 0 : Math.min(max, list.scrollLeft + step), behavior: 'smooth' });
+      if (document.hidden || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+      setCarouselIndex(index => (index + 1) % recommendations.length);
     }, 4500);
     return () => window.clearInterval(timer);
   }, [carouselPaused, carouselInteracting, carouselFocused, open, success, recommendations.length]);
@@ -65,6 +61,11 @@ export default function Home() {
   }, [open, sending]);
   const selected = useMemo(() => products.filter(p => cart[p.id] > 0), [products, cart]);
   const recommendedProducts = recommendations.flatMap(id => { const product = products.find(p => p.id === id); return product ? [product] : []; });
+  const activeIndex = recommendedProducts.length ? carouselIndex % recommendedProducts.length : 0;
+  const featured = recommendedProducts[activeIndex];
+  function moveCarousel(direction: number) {
+    setCarouselIndex(index => (index + direction + recommendedProducts.length) % recommendedProducts.length);
+  }
   const categories = useMemo(() => {
     const normalize = (category: string) => category.trim().toLocaleLowerCase('es');
     return [
@@ -109,7 +110,21 @@ export default function Home() {
 
     <section id="catalogo" className="catalog container">
       <div className="section-heading"><div><p className="kicker section-kicker"><span className="slash"/> LA TIENDITA DEL TALLER</p><h2>ELIGE TU <span>ANTOJO.</span></h2><p className="section-description">Pequeños gustos para acompañar tu día.</p></div><div className="section-number" aria-hidden="true">01 <span>/</span> CATÁLOGO</div></div>
-      {!loading && !error && recommendedProducts.length > 0 && <section className="recommendations" aria-labelledby="recommendations-title" aria-roledescription="carrusel" onMouseEnter={() => setCarouselInteracting(true)} onMouseLeave={() => setCarouselInteracting(false)} onTouchStart={() => setCarouselInteracting(true)} onTouchEnd={() => setCarouselInteracting(false)} onTouchCancel={() => setCarouselInteracting(false)} onFocusCapture={() => setCarouselFocused(true)} onBlurCapture={e => { if (!e.currentTarget.contains(e.relatedTarget)) setCarouselFocused(false); }}><div className="recommendations-heading"><div><p className="kicker section-kicker"><span className="slash"/> SELECCIÓN DEL DÍA</p><h3 id="recommendations-title">DESTACADOS PARA TI</h3><p>Una selección diaria de los favoritos más vendidos.</p></div><div className="recommendation-controls"><button type="button" aria-label={carouselPaused ? "Reanudar desplazamiento automático" : "Pausar desplazamiento automático"} aria-pressed={carouselPaused} onClick={() => setCarouselPaused(value => !value)}>{carouselPaused ? <Play size={18}/> : <Pause size={18}/>}</button><button type="button" aria-label="Desplazar recomendaciones a la izquierda" aria-controls="recommendations-list" onClick={() => recommendationsRef.current?.scrollBy({ left: -250, behavior: 'smooth' })}><ArrowLeft size={18}/></button><button type="button" aria-label="Desplazar recomendaciones a la derecha" aria-controls="recommendations-list" onClick={() => recommendationsRef.current?.scrollBy({ left: 250, behavior: 'smooth' })}><ArrowRight size={18}/></button></div></div><div className="recommendations-list" id="recommendations-list" ref={recommendationsRef} tabIndex={0} aria-label="Productos recomendados">{recommendedProducts.map((p, index) => <article className="product-card recommendation-card" key={p.id}><ProductArt product={p} index={index}/><div className="product-info"><h3>{p.name}</h3>{p.promotion && <p className="promo-label">PROMO: {p.promotion.quantity} POR {money(p.promotion.price)}</p>}<div className="product-bottom"><div><span className="price-label">PRECIO UNITARIO</span><p className="price">{money(p.price)}</p></div>{cart[p.id] ? <div className="quantity-control"><button className="quantity-button" aria-label={`Quitar una unidad de ${p.name}`} onClick={() => change(p, -1)}><Minus size={16}/></button><span aria-label={`Cantidad: ${cart[p.id]}`}>{cart[p.id]}</span><button className="quantity-button" aria-label={`Agregar una unidad de ${p.name}`} disabled={cart[p.id] >= p.stock} onClick={() => change(p, 1)}><Plus size={16}/></button></div> : <button className="add-button" aria-label={`Agregar ${p.name}`} onClick={() => change(p, 1)}><Plus size={20}/></button>}</div></div></article>)}</div></section>}
+      {!loading && !error && featured && <section className="recommendations" aria-labelledby="recommendations-title" aria-roledescription="carrusel" onMouseEnter={() => setCarouselInteracting(true)} onMouseLeave={() => setCarouselInteracting(false)} onFocusCapture={() => setCarouselFocused(true)} onBlurCapture={e => { if (!e.currentTarget.contains(e.relatedTarget)) setCarouselFocused(false); }}>
+        <div className="recommendations-heading"><div><p className="kicker section-kicker"><span className="slash"/> SELECCI?N DEL D?A</p><h3 id="recommendations-title">DESTACADOS PARA TI</h3><p>Una selecci?n diaria de los favoritos m?s vendidos.</p></div><div className="recommendation-controls">
+          <button type="button" aria-label={carouselPaused ? 'Reanudar desplazamiento autom?tico' : 'Pausar desplazamiento autom?tico'} onClick={() => setCarouselPaused(value => !value)}>{carouselPaused ? <Play size={18}/> : <Pause size={18}/>}</button>
+          <button type="button" aria-label="Producto anterior" aria-controls="recommendations-list" onClick={() => moveCarousel(-1)}><ArrowLeft size={18}/></button>
+          <button type="button" aria-label="Producto siguiente" aria-controls="recommendations-list" onClick={() => moveCarousel(1)}><ArrowRight size={18}/></button>
+        </div></div>
+        <div className="coverflow" id="recommendations-list" aria-label="Productos recomendados" onTouchStart={e => { touchStartX.current = e.touches[0].clientX; setCarouselInteracting(true); }} onTouchEnd={e => { if (touchStartX.current !== null) { const delta = e.changedTouches[0].clientX - touchStartX.current; if (Math.abs(delta) > 40) { e.preventDefault(); moveCarousel(delta < 0 ? 1 : -1); } } touchStartX.current = null; setCarouselInteracting(false); }} onTouchCancel={() => { touchStartX.current = null; setCarouselInteracting(false); }}>
+          {recommendedProducts.map((p, index) => {
+            let offset = (index - activeIndex + recommendedProducts.length) % recommendedProducts.length;
+            if (offset > recommendedProducts.length / 2) offset -= recommendedProducts.length;
+            return <button type="button" className={`coverflow-card coverflow-position-${offset + 2}`} key={p.id} aria-label={`Ver ${p.name}`} aria-current={offset === 0 ? 'true' : undefined} onClick={() => setCarouselIndex(index)}><ProductArt product={p} index={index}/></button>;
+          })}
+        </div>
+        <div className="featured-details" aria-live="off"><div><span className="featured-counter">{String(activeIndex + 1).padStart(2, '0')} / {String(recommendedProducts.length).padStart(2, '0')}</span><h4>{featured.name}</h4>{featured.promotion && <p className="promo-label">PROMO: {featured.promotion.quantity} POR {money(featured.promotion.price)}</p>}<p className="featured-price">{money(featured.price)}</p></div>{cart[featured.id] ? <div className="quantity-control"><button className="quantity-button" aria-label={`Quitar una unidad de ${featured.name}`} onClick={() => change(featured, -1)}><Minus size={16}/></button><span aria-label={`Cantidad: ${cart[featured.id]}`}>{cart[featured.id]}</span><button className="quantity-button" aria-label={`Agregar una unidad de ${featured.name}`} disabled={cart[featured.id] >= featured.stock} onClick={() => change(featured, 1)}><Plus size={16}/></button></div> : <button className="add-button" aria-label={`Agregar ${featured.name}`} onClick={() => change(featured, 1)}><Plus size={20}/></button>}</div>
+      </section>}
       <div className="catalog-bar"><span><span className="bar-accent"/> TODOS LOS PRODUCTOS</span><span aria-live="polite">{loading ? 'CARGANDO...' : `${products.length} PRODUCTOS`}</span></div>
       {error && !open && <div role="alert" className="notice notice-error"><div><strong>NO PUDIMOS CARGAR EL CATÁLOGO</strong><p>{error}</p></div><button className="text-button" onClick={load}><RefreshCw size={15}/> REINTENTAR</button></div>}
       {loading ? <div className="empty-state" role="status"><LoaderCircle className="spin" size={28}/><strong>PREPARANDO EL CATÁLOGO</strong><span>Un momento, por favor.</span></div> : products.length === 0 && !error ? <div className="empty-state"><ShoppingBag size={28}/><strong>AÚN NO HAY PRODUCTOS</strong><span>El catálogo está vacío por ahora.</span></div> : !error && categories.map((category, groupIndex) => <section className="category-section" key={category.title} aria-labelledby={`category-${groupIndex}`}><div className="category-heading"><div><span className="category-index">{String(groupIndex + 1).padStart(2, '0')} / CATEGORÍA</span><h3 id={`category-${groupIndex}`}>{category.title}</h3></div><span className="category-count">{category.products.length} PRODUCTOS</span></div>{category.products.length === 0 ? <p className="category-empty">No hay productos en esta categoría por ahora.</p> : <div className="product-grid">{category.products.map((p, index) => <article key={p.id} className={`product-card ${!p.stock ? 'sold-out' : ''}`}>
