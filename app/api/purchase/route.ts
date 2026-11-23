@@ -7,7 +7,7 @@ export async function POST(request: Request) {
     const name = typeof body.name === 'string' ? body.name.trim().replace(/\s+/g, ' ') : '';
     const items = body.items;
     const paymentMethod = body.paymentMethod;
-    if (paymentMethod !== 'cash' && paymentMethod !== 'pending') return NextResponse.json({ error: 'Selecciona una forma de pago válida.' }, { status: 400 });
+    if (paymentMethod !== 'cash' && paymentMethod !== 'terminal' && paymentMethod !== 'pending') return NextResponse.json({ error: 'Selecciona una forma de pago válida.' }, { status: 400 });
     if (typeof body.expectedTotal !== 'number' || !Number.isFinite(body.expectedTotal) || body.expectedTotal < 0) return NextResponse.json({ error: 'Revisa el total de tu compra.' }, { status: 400 });
     if (name.length < 3 || name.length > 100 || !Array.isArray(items) || !items.length || items.length > 100 || items.some(item => !item || typeof item.id !== 'string' || !item.id || !Number.isInteger(item.quantity) || item.quantity < 1 || item.quantity > 100) || new Set(items.map(item => item.id)).size !== items.length) return NextResponse.json({ error: 'Revisa tu nombre y los productos seleccionados.' }, { status: 400 });
     return NextResponse.json(await purchase(name, items, paymentMethod, body.expectedTotal));

@@ -20,7 +20,7 @@ function client() {
   return google.sheets({ version: 'v4', auth: new google.auth.JWT({ email, key, scopes: ['https://www.googleapis.com/auth/spreadsheets'] }) });
 }
 const number = (value: unknown) => Number(String(value ?? '').replace(/[$,\s]/g, ''));
-type InventoryRow = { product: Product; minimum: number; alerted: boolean; row: number; stockColumn: string; alertColumn: string };
+type InventoryRow = { available: boolean; product: Product; minimum: number; alerted: boolean; row: number; stockColumn: string; alertColumn: string };
 function columnName(index: number) {
   let value = index + 1; let result = '';
   while (value > 0) { value--; result = String.fromCharCode(65 + value % 26) + result; value = Math.floor(value / 26); }
@@ -32,6 +32,8 @@ async function inventory(): Promise<InventoryRow[]> {
   const names = headers.map(value => String(value).trim().toLowerCase());
   const required = ['id_producto', 'nombre', 'precio', 'stock_actual', 'stock_minimo', 'alerta_enviada', 'categoria', 'cantidad_promo', 'precio_promo'];
   if (required.some(name => names.filter(header => header === name).length !== 1)) throw new Error('Los encabezados de Inventario están incompletos o duplicados.');
+  if (names.filter(header => header === 'disponible').length > 1) throw new Error('El encabezado disponible está duplicado.');
+  const availabilityColumn = names.indexOf('disponible');
   const col = Object.fromEntries(required.map(name => [name, names.indexOf(name)]));
   return rows.flatMap((r, index) => {
     const price = number(r[col.precio]); const stock = number(r[col.stock_actual]); const minimum = number(r[col.stock_minimo]);
@@ -40,11 +42,11 @@ async function inventory(): Promise<InventoryRow[]> {
     const quantity = number(quantityValue); const promoPrice = number(priceValue);
     if ((quantityValue || priceValue) && (!quantityValue || !priceValue || !Number.isInteger(quantity) || quantity < 2 || !Number.isFinite(promoPrice) || promoPrice < 0)) throw new Error(`Promoción inválida en Inventario, fila ${index + 2}.`);
     const promotion = quantityValue && priceValue ? { quantity, price: promoPrice } : null;
-    return [{ product: { id: String(r[col.id_producto]), name: String(r[col.nombre]), price, stock, category: String(r[col.categoria] ?? '').trim(), promotion }, minimum, alerted: ['true', 'si', 'sí', '1'].includes(String(r[col.alerta_enviada] ?? '').trim().toLowerCase()), row: index + 2, stockColumn: columnName(col.stock_actual), alertColumn: columnName(col.alerta_enviada) }];
+    return [{ available: availabilityColumn < 0 || String(r[availabilityColumn] ?? '').trim() === '' || String(r[availabilityColumn]).trim().toLocaleLowerCase('es') === 'disponible', product: { id: String(r[col.id_producto]), name: String(r[col.nombre]), price, stock, category: String(r[col.categoria] ?? '').trim(), promotion }, minimum, alerted: ['true', 'si', 'sí', '1'].includes(String(r[col.alerta_enviada] ?? '').trim().toLowerCase()), row: index + 2, stockColumn: columnName(col.stock_actual), alertColumn: columnName(col.alerta_enviada) }];
   });
 }
 export async function getProducts() {
-  const products = (await inventory()).map(x => x.product);
+  const products = (await inventory()).filter(x => x.available).map(x => x.product);
   const files = await readdir(path.join(process.cwd(), 'public', 'productos')).catch(() => [] as string[]);
   const images = new Map<string, string>();
   for (const file of files.sort()) {
@@ -64,7 +66,7 @@ export async function purchase(name: string, items: CartItem[], paymentMethod: P
   const rows = await inventory();
   const selected = items.map(item => {
     const matches = rows.filter(row => row.product.id === item.id);
-    if (matches.length !== 1) throw new Error('Un producto ya no está disponible. Actualiza el catálogo.');
+    if (matches.length !== 1 || !matches[0].available) throw new Error('Un producto ya no está disponible. Actualiza el catálogo.');
     const row = matches[0];
     if (item.quantity > row.product.stock) throw new Error(`Solo quedan ${row.product.stock} unidades de ${row.product.name}.`);
     return { ...row, quantity: item.quantity, remaining: row.product.stock - item.quantity };

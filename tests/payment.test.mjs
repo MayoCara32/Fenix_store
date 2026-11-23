@@ -18,3 +18,7 @@ test('una compra en efectivo conserva el saldo anterior', () => {
 test('un usuario nuevo que paga en efectivo queda sin deuda', () => {
   assert.deepEqual(paymentDetails('cash', 0, 12.25), { status: 'Pagado en efectivo', balance: 0 });
 });
+
+test('un pago por terminal conserva el saldo anterior', () => {
+  assert.deepEqual(paymentDetails('terminal', 25.5, 12.25), { status: 'Pagado por terminal', balance: 25.5 });
+});
