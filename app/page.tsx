@@ -72,7 +72,8 @@ export default function Home() {
       { title: 'Comida', products: products.filter(p => normalize(p.category) === 'comida') },
       { title: 'Dulces', products: products.filter(p => normalize(p.category) === 'dulces') },
       { title: 'Botana', products: products.filter(p => normalize(p.category) === 'botana') },
-      { title: 'Otros productos', products: products.filter(p => !['comida', 'dulces', 'botana'].includes(normalize(p.category))) },
+      { title: 'Bebibles', products: products.filter(p => normalize(p.category) === 'bebibles') },
+      { title: 'Otros productos', products: products.filter(p => !['comida', 'dulces', 'botana', 'bebibles'].includes(normalize(p.category))) },
     ].filter(group => group.title !== 'Otros productos' || group.products.length > 0);
   }, [products]);
   const count = Object.values(cart).reduce((a, b) => a + b, 0);
